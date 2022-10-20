@@ -1,5 +1,4 @@
 #include <Arduino.h>
-
 #include <DHT.h> //temp and humidity sensors
 
 #include <secretConsts.h> // secret api key 
@@ -33,11 +32,11 @@ FirebaseConfig config;
 
 void setup() {
   Serial.begin(74880);
-
   dht.setup(DHT11PIN);
+  login();
+
   
 }
-
 void login(){
   unsigned long sendDataPrevMillis = 0;
   int count = 0;
@@ -75,12 +74,12 @@ void login(){
 
 }
 
+
 void loop() {
   int NIGHT_VALUE = 2900;
-  
 
   // Serial.println(dht.getTemperature()); // despite wrong borders func returns reasonable feedback
-  int analogReadVal = analogRead(FOTO_ANALOG_INPUT_PIN);
-  Serial.println(analogReadVal);
-  delay(1200);
+  // int analogReadVal = analogRead(FOTO_ANALOG_INPUT_PIN);
+  // Serial.println(analogReadVal);
+  // delay(1200);
 }
