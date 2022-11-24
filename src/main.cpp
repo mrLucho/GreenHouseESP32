@@ -1,6 +1,7 @@
+// private includes
+
 #include <Arduino.h>
 #include <DHT.h> //temp and humidity sensors
-
 
 #if defined(ESP32)
   #include <WiFi.h>
@@ -20,11 +21,17 @@
 #define DHT11PIN 27
 #define FOTO_ANALOG_INPUT_PIN 26
 
+struct SensorReadings
+{
+  float temperature;
+  int sunShine;
+  int humidity;
+  int waterLevel;
+};
 
 
 // ugly global var
 DHT dht;
-
 
 FirebaseData FBDataObj;
 FirebaseAuth FBauth;
@@ -32,22 +39,50 @@ FirebaseConfig FBconfig;
 FirebaseJson json;
 String DBpath;
 
+const char* temperaturePath = "/temperature";
+const char* humidityPath = "/humidity";
+const char* timePath = "/epochTime";
+
 unsigned long previous_time = 0;
-unsigned long Delay = 300000;
-String temperaturePath = "/temperature";
-String humidityPath = "/humidity";
-String timePath = "/epochTime";
-void login(float temperature, int sunShine);
-void connectWifi(){
-  WiFi.begin(WEB_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED){
-    Serial.print(".");
-    delay(300);
-  }
-  Serial.println();
-  Serial.print("Connected with IP: ");
-  Serial.println(WiFi.localIP());
-  Serial.println();
+
+
+// fun prototypes----
+SensorReadings getSensorReadings();
+void login();
+void connectWifi();
+void sendJsonToDB(SensorReadings sensors);
+unsigned long Get_Epoch_Time();
+// ------
+
+
+void setup() {
+  Serial.begin(115200);
+  dht.setup(DHT11PIN);
+  connectWifi();
+  login();
+  
+}
+
+void loop(){
+  if (Firebase.ready() && (millis() - previous_time > 300000 || previous_time == 0)){ //300000 is 5 min delay
+    previous_time = millis();
+    SensorReadings s = getSensorReadings();
+    sendJsonToDB(s);
+  } 
+}
+
+// rest of fun
+void sendJsonToDB(SensorReadings sensors){
+  unsigned long epoch_time = Get_Epoch_Time();
+  Serial.print ("time: ");
+  Serial.println (epoch_time);
+
+  String parent_path = DBpath + "/" + String(epoch_time);
+
+  json.set(temperaturePath, String(sensors.temperature));
+  json.set(humidityPath, String(sensors.humidity));
+  json.set(timePath, String(epoch_time));
+  Serial.printf("Set json... %s\n", Firebase.RTDB.setJSON(&FBDataObj, parent_path.c_str(), &json) ? "ok" : FBDataObj.errorReason().c_str());
 }
 
 unsigned long Get_Epoch_Time() {
@@ -60,14 +95,35 @@ unsigned long Get_Epoch_Time() {
   return now;
 }
 
-void setup() {
-  Serial.begin(115200);
-  dht.setup(DHT11PIN);
-  connectWifi();
-  login(1.0,2);
-  
+void connectWifi(){
+  WiFi.begin(WEB_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED){
+    Serial.print(".");
+    delay(300);
+  }
+  Serial.println();
+  Serial.print("Connected with IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
 }
-void login(float temperature, int sunShine){
+
+SensorReadings getSensorReadings(){
+  // if (dht.getStatusString() == "OK"){ dht.getMinimumSamplingPeriod() might be useful
+  float temp = dht.getTemperature();
+  int humidity = dht.getHumidity();
+  int sun = 10; //dummy data
+  int water = 20; // also dummy
+  SensorReadings s = {temp, humidity, sun, water};
+  return s;
+  // }
+  // else{
+  //   Serial.println("could not resolve sensor values");
+  //   SensorReadings s = {0,0,0,0};
+  //   return s;
+  // }
+}
+
+void login(){
   const char* ntpServer = "pool.ntp.org";
   String UID;
 
@@ -89,22 +145,4 @@ void login(float temperature, int sunShine){
   Serial.println(UID);
 
   DBpath = "/Data/" + UID + "/Sensors";
-}
-
-
-void loop(){
-  if (Firebase.ready() && (millis() - previous_time > Delay || previous_time == 0)){
-    previous_time = millis();
-
-    unsigned long epoch_time = Get_Epoch_Time();
-    Serial.print ("time: ");
-    Serial.println (epoch_time);
-
-    String parent_path = DBpath + "/" + String(epoch_time);
-
-    json.set(temperaturePath.c_str(), String(3));
-    json.set(humidityPath.c_str(), String(5));
-    json.set(timePath, String(epoch_time));
-    Serial.printf("Set json... %s\n", Firebase.RTDB.setJSON(&FBDataObj, parent_path.c_str(), &json) ? "ok" : FBDataObj.errorReason().c_str());
-  }
 }
