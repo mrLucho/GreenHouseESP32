@@ -19,16 +19,22 @@
 #include <time.h>
 
 #define DHT11PIN 27
-#define FOTO_ANALOG_INPUT_PIN 26
+#define FOTO_ANALOG_INPUT_PIN 36
 
+// struct SensorReadings
+// {
+//   float temperature;
+//   int humidity;
+//   uint16_t sunShine;
+// };
 struct SensorReadings
 {
   float temperature;
-  int sunShine;
   int humidity;
-  int waterLevel;
+  uint16_t sunShine;
+  uint16_t moisture;
+  uint16_t waterLevel;
 };
-
 
 // ugly global var
 DHT dht;
@@ -41,6 +47,19 @@ String DBpath;
 
 const char* temperaturePath = "/temperature";
 const char* humidityPath = "/humidity";
+const char* sunPath = "/sunshine";
+const char* moisturePath = "/moisture";
+const char* waterLevel = "/waterLevel";
+
+
+
+
+// here change
+uint8_t debugFlag = 1;
+
+
+long int duration = 300000;
+
 const char* timePath = "/epochTime";
 
 unsigned long previous_time = 0;
@@ -64,7 +83,11 @@ void setup() {
 }
 
 void loop(){
-  if (Firebase.ready() && (millis() - previous_time > 300000 || previous_time == 0)){ //300000 is 5 min delay
+  // if debug shorten time to wait
+  if (debugFlag == 0) duration = 300000;
+  else duration = 300000/10;
+
+  if (Firebase.ready() && (millis() - previous_time > duration || previous_time == 0)){ //300000 is 5 min delay
     previous_time = millis();
     SensorReadings s = getSensorReadings();
     sendJsonToDB(s);
@@ -81,6 +104,10 @@ void sendJsonToDB(SensorReadings sensors){
 
   json.set(temperaturePath, String(sensors.temperature));
   json.set(humidityPath, String(sensors.humidity));
+  json.set(sunPath, String(sensors.sunShine));
+  json.set(moisturePath, String(sensors.moisture));
+  json.set(waterLevel, String(sensors.waterLevel));
+
   json.set(timePath, String(epoch_time));
   Serial.printf("Set json... %s\n", Firebase.RTDB.setJSON(&FBDataObj, parent_path.c_str(), &json) ? "ok" : FBDataObj.errorReason().c_str());
 }
@@ -111,9 +138,8 @@ SensorReadings getSensorReadings(){
   // if (dht.getStatusString() == "OK"){ dht.getMinimumSamplingPeriod() might be useful
   float temp = dht.getTemperature();
   int humidity = dht.getHumidity();
-  int sun = 10; //dummy data
-  int water = 20; // also dummy
-  SensorReadings s = {temp, humidity, sun, water};
+  uint16_t sun = analogRead(FOTO_ANALOG_INPUT_PIN);
+  SensorReadings s = {temp, humidity, sun,1,1};
   return s;
   // }
   // else{
