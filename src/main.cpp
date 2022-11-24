@@ -20,6 +20,7 @@
 
 #define DHT11PIN 27
 #define FOTO_ANALOG_INPUT_PIN 36
+#define WATER_LEVEL_ANALOG_INPUT_PIN 39
 
 // struct SensorReadings
 // {
@@ -139,7 +140,8 @@ SensorReadings getSensorReadings(){
   float temp = dht.getTemperature();
   int humidity = dht.getHumidity();
   uint16_t sun = analogRead(FOTO_ANALOG_INPUT_PIN);
-  SensorReadings s = {temp, humidity, sun,1,1};
+  uint16_t water = analogRead(WATER_LEVEL_ANALOG_INPUT_PIN);
+  SensorReadings s = {temp, humidity, sun,1,water};
   return s;
   // }
   // else{
