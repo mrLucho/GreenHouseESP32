@@ -18,16 +18,12 @@
 
 #include <time.h>
 
+#define MOISTURE_ANALOG_INPUT_PIN 34
+#define DIGITAL_MOISTURE_SIGNAL 35
 #define DHT11PIN 27
 #define FOTO_ANALOG_INPUT_PIN 36
 #define WATER_LEVEL_ANALOG_INPUT_PIN 39
 
-// struct SensorReadings
-// {
-//   float temperature;
-//   int humidity;
-//   uint16_t sunShine;
-// };
 struct SensorReadings
 {
   float temperature;
@@ -51,7 +47,7 @@ const char* humidityPath = "/humidity";
 const char* sunPath = "/sunshine";
 const char* moisturePath = "/moisture";
 const char* waterLevel = "/waterLevel";
-
+const char* timePath = "/epochTime";
 
 
 
@@ -61,7 +57,7 @@ uint8_t debugFlag = 1;
 
 long int duration = 300000;
 
-const char* timePath = "/epochTime";
+
 
 unsigned long previous_time = 0;
 
@@ -80,6 +76,7 @@ void setup() {
   dht.setup(DHT11PIN);
   connectWifi();
   login();
+
   
 }
 
@@ -141,7 +138,10 @@ SensorReadings getSensorReadings(){
   int humidity = dht.getHumidity();
   uint16_t sun = analogRead(FOTO_ANALOG_INPUT_PIN);
   uint16_t water = analogRead(WATER_LEVEL_ANALOG_INPUT_PIN);
-  SensorReadings s = {temp, humidity, sun,1,water};
+  uint16_t moist = analogRead(MOISTURE_ANALOG_INPUT_PIN);
+
+  SensorReadings s = {temp, humidity, sun,moist ,water};
+
   return s;
   // }
   // else{
