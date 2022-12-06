@@ -143,12 +143,6 @@ SensorReadings getSensorReadings(){
   SensorReadings s = {temp, humidity, sun,moist ,water};
 
   return s;
-  // }
-  // else{
-  //   Serial.println("could not resolve sensor values");
-  //   SensorReadings s = {0,0,0,0};
-  //   return s;
-  // }
 }
 
 void login(){
